@@ -1,5 +1,6 @@
 package sinica.music.tag.project;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -7,13 +8,13 @@ import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+//import sinica.music.tag.mfcc.MFCC;
 import sinica.music.tag.mfcc.MFCC;
 import sinica.music.tag.project.Music_tagActivity.WavInfo;
 
 import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
-
 
 public class Music_tagActivity extends Activity {
     /** Called when the activity is first created. */
@@ -27,6 +28,8 @@ public class Music_tagActivity extends Activity {
 	private static WavInfo wavInfo;
 	byte[] data;
 	 
+	
+//	wav length : dataSize = (bits / 8) * channels * sampling_rate * (playTime) 
 	class WavInfo{
 		public int format;
 		public int channels;
@@ -41,45 +44,69 @@ public class Music_tagActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        
+        data = new byte[2048];
         
         wavInfo = new WavInfo();
         InputStream wavStream = getResources().openRawResource(R.raw.choppersound);
-        
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(wavStream); 
         
         try {
 			readHeader(wavStream);
-			data = readWavPcm(wavInfo,wavStream);
+//			data = readWavPcm(wavInfo,wavStream);
+			
+			while(bufferedInputStream.read(data) != -1) { 
+				double[] doubleData = changeDataToDouble(data);
+				rmZero(doubleData);
+				// need downsampling to 22050
+				
+				double[] mfcc = extractMfcc(doubleData);
+
+            }
+			
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
         
-        double[] doubleData = changeDataToDouble(data);
-   
-        
-        int nnumberOfMFCCParameters = 22;
-		int nlifteringCoefficient = 12;
-		ArrayList<Double> mfcc = extractMfcc(doubleData, nnumberOfMFCCParameters, nlifteringCoefficient);
-		
-		
-        
     }
     
-    private double[] changeDataToDouble(byte[] data) {
+    private void rmZero(double[] doubleData) {
+    	double sum = 0;
+    	double a = 10 ;
+    	
+    	for (int i=0; i < doubleData.length; i++)
+    		sum+=doubleData[i]; 
+    	if(sum == 0)
+    	{
+    		for (int i=0; i < doubleData.length; i++)
+        	   doubleData[i] = (Math.random() * a - a/2) / (double)32768 ; // 32768 = 2 ^ 15
+    	}
+	}
+
+	private double[] changeDataToDouble(byte[] data) {
     	
     	int bytes = wavInfo.bits /8 ;
-    	double [] doubleData = new double[wavInfo.dataSize / bytes];
+    	double [] doubleData = new double[ data.length / bytes / 2];;
     	
-    	if( bytes == 2){
-    		for(int i = 0 ; i < doubleData.length / bytes -1 ; i++ ){
-    			doubleData[i] = (double)((data [(i)*2] & 0xff) | (data[(i)*2 + 1] << 8));
-    		}
-    	}else if( bytes == 4){
-    		for(int i = 0 ; i < doubleData.length / bytes -1 ; i++ ){
-    			doubleData[i] = (double)((data [(i)*4] & 0xff) | (data[(i)*4 + 1] << 8) | (data[(i)*4 + 2] << 16) | (data[(i)*4 + 3] << 24));
-    		}
+    	if ( wavInfo.channels == 2)
+    	{
+	    	
+	    	if( bytes == 2){
+	    		for(int i = 0 ; i < data.length ; i+=4 ){
+	    			double left = (double)((data [i] & 0xff) | (data[i + 1] << 8));  // left channel
+	    			double right = (double)((data [i + 2] & 0xff) | (data[i + 3] << 8)); // right channel
+	    			
+	    			doubleData[i/4] = (double)((left + right) / 2 );
+	    		}
+	    	}
     	}
+// 先不管 32 bits    	
+//    	else if( bytes == 4){
+//    		for(int i = 0 ; i < doubleData.length; i++ ){
+//    			doubleData[i] = (double)((data [(i)*4] & 0xff) | (data[(i)*4 + 1] << 8) | (data[(i)*4 + 2] << 16) | (data[(i)*4 + 3] << 24));
+//    		}
+//    	}
     	
     	
     	return doubleData;
@@ -91,14 +118,17 @@ public class Music_tagActivity extends Activity {
     	  return data;
     }
     
-    private ArrayList<Double> extractMfcc(double[] doubleData, int a, int b) {
-    	 int nnumberofFilters = 24;	
-         int nlifteringCoefficient = b;	//earlier value was 22, now set to a-20
-         boolean oisLifteringEnabled = true;
+    private double[] extractMfcc(double[] doubleData) {
+    	
+    	 // without check the parameter
+    	 
+    	 int nnumberofFilters = 13;	
+         int nlifteringCoefficient = 13;	//earlier value was 22, now set to a-20
+         boolean oisLifteringEnabled = false;
          boolean oisZeroThCepstralCoefficientCalculated = false;
-         int nnumberOfMFCCParameters = a; //earlier value was 12, now set to a-10//without considering 0-th
+         int nnumberOfMFCCParameters = 13; //earlier value was 12, now set to a-10//without considering 0-th
          double dsamplingFrequency = 8000.0;
-         int nFFTLength = 512;
+         int nFFTLength = 2048;
          ArrayList<Double> mfcc_parameters = new ArrayList<Double>();
          
          if (oisZeroThCepstralCoefficientCalculated) {
@@ -115,23 +145,9 @@ public class Music_tagActivity extends Activity {
                  oisLifteringEnabled,
                  nlifteringCoefficient,
                  oisZeroThCepstralCoefficientCalculated);
-        
-//  need to check
-         
-         for (int i =0 ; i < doubleData.length / nFFTLength ; i ++)
-         {
-        	 try{
-                double[] test = Arrays.copyOfRange(doubleData, i*512, i*512 + 511);
-                double[] dparameters = mfcc.getParameters(test);
-                for (int j = 0; j < dparameters.length; j++) 
-                {
-                	mfcc_parameters.add(dparameters[j]);
-                }
-        	 }catch(Exception e){
-        		 
-        	 }
-         }
-         return mfcc_parameters;
+         double[] dparameters = mfcc.getParameters(doubleData);
+
+         return dparameters;
          
 
 	}
