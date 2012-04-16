@@ -1,20 +1,33 @@
 package sinica.music.tag.project;
 
+
 import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 
 //import sinica.music.tag.mfcc.MFCC;
 import sinica.music.tag.mfcc.MFCC;
 import sinica.music.tag.project.Music_tagActivity.WavInfo;
 
 import android.app.Activity;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
+import android.view.View;
+import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 public class Music_tagActivity extends Activity {
     /** Called when the activity is first created. */
@@ -27,6 +40,14 @@ public class Music_tagActivity extends Activity {
 	private static final String CHARSET = "ASCII";
 	private static WavInfo wavInfo;
 	byte[] data;
+	
+	//music player
+	private ImageButton mPause, mNext, mBefore, mStart, mStop;
+	private TextView mTextView1; 
+	private ImageView mImageView1; 
+	private boolean bIsReleased = false;
+	private boolean bIsPaused = false; 
+	public MediaPlayer myPlayer1 = new MediaPlayer();
 	 
 	
 //	wav length : dataSize = (bits / 8) * channels * sampling_rate * (playTime) 
@@ -44,30 +65,231 @@ public class Music_tagActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        data = new byte[2048];
+        setContentView(R.layout.main); 
         
-        wavInfo = new WavInfo();
-        InputStream wavStream = getResources().openRawResource(R.raw.choppersound);
-        BufferedInputStream bufferedInputStream = new BufferedInputStream(wavStream); 
+        mStart = (ImageButton) findViewById(R.id.myImageButton1); 
+        mStop = (ImageButton) findViewById(R.id.myImageButton2);
+        mPause = (ImageButton) findViewById(R.id.pause); 
+        mNext = (ImageButton) findViewById(R.id.next);
+        mBefore = (ImageButton) findViewById(R.id.before); 
+        mImageView1 = (ImageView) findViewById(R.id.myImageView1);
+        mTextView1 = (TextView) findViewById(R.id.myTextView1); 
+     
+        /*∂}©l´ˆ∂s */
+        mStart.setOnClickListener(new ImageButton.OnClickListener() 
+        { 
+          @Override 
+          public void onClick(View v) 
+          { 
+            // TODO Auto-generated method stub 
+            mStart.setImageResource(R.drawable.stars);
+            mImageView1.setImageResource(R.drawable.dance);
+            mPause.setImageResource(R.drawable.pause);
+            
+            try 
+            { 
+              if(myPlayer1.isPlaying()==true) 
+              {
+                /*ß‚ MediaPlayer≠´≥]*/
+                myPlayer1.reset();            
+              }
+              /*≥]©w MediaPlayer≈™®˙SDcard™∫¿…Æ◊*/
+              myPlayer1.setDataSource( "/sdcard/nana.wav" );
+              myPlayer1.prepare();
+              /*ß‚ MediaPlayer∂}©lºΩ©Ò*/
+              myPlayer1.start(); 
+              mTextView1.setText(R.string.str_start); 
+            } 
+            catch (IllegalStateException e) 
+            { 
+              // TODO Auto-generated catch block 
+              mTextView1.setText(e.toString()); 
+              e.printStackTrace(); 
+            } 
+            catch (IOException e) 
+            { 
+              // TODO Auto-generated catch block 
+              mTextView1.setText(e.toString()); 
+              e.printStackTrace(); 
+            } 
+             
+            /* ∑Ì≠µº÷ºΩßπ∑|∞ı¶Ê™∫Listener */  
+            myPlayer1.setOnCompletionListener(new OnCompletionListener() 
+            { 
+              // @Override 
+              public void onCompletion(MediaPlayer arg0) 
+              {  
+                mTextView1.setText(R.string.str_finished);
+                mStart.setImageResource(R.drawable.star);
+              } 
+            });
+          } 
+        });     
+         
+        /*º»∞±´ˆ∂s */ 
+        mPause.setOnClickListener(new ImageButton.OnClickListener() 
+        { 
+          public void onClick(View view) 
+          { 
+            if (myPlayer1 != null) 
+            { 
+              if(bIsReleased == false) 
+              { 
+                if(bIsPaused==false) 
+                { 
+                  /*≥]©w MediaPlayerº»∞±ºΩ©Ò*/
+                  myPlayer1.pause(); 
+                  bIsPaused = true; 
+                  mTextView1.setText(R.string.str_pause); 
+                  mStart.setImageResource(R.drawable.star);
+                  mPause.setImageResource(R.drawable.pause_2);
+                } 
+                else if(bIsPaused==true) 
+                { 
+                  /*≥]©w MediaPlayerºΩ©Ò*/
+                  myPlayer1.start(); 
+                  bIsPaused = false; 
+                  mTextView1.setText(R.string.str_start);
+                  mStart.setImageResource(R.drawable.stars);
+                  mPause.setImageResource(R.drawable.pause);
+                } 
+              } 
+            } 
+          } 
+        }); 
         
-        try {
-			readHeader(wavStream);
-//			data = readWavPcm(wavInfo,wavStream);
-			
-			while(bufferedInputStream.read(data) != -1) { 
-				double[] doubleData = changeDataToDouble(data);
-				rmZero(doubleData);
-				// need downsampling to 22050
-				
-				double[] mfcc = extractMfcc(doubleData);
+        /*©π§U§@≠∫∫q™∫´ˆ∂s */
+        mNext.setOnClickListener(new ImageButton.OnClickListener() 
+        {
 
-            }
-			
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+          @Override
+          public void onClick(View arg0)
+          {
+            // TODO Auto-generated method stub       
+            mStart.setImageResource(R.drawable.stars);
+            mImageView1.setImageResource(R.drawable.dance);
+            
+            try 
+            { 
+              if(myPlayer1.isPlaying()==true) 
+              { 
+                /*ß‚ MediaPlayer≠´≥]*/ 
+                myPlayer1.reset();            
+              } 
+              /*≥]©w MediaPlayer≈™®˙SDcard™∫¿…Æ◊*/
+              myPlayer1.setDataSource( "/sdcard/bb.wav" );
+              myPlayer1.prepare();
+              /*±“∞ MediaPlayer*/
+              myPlayer1.start(); 
+              mTextView1.setText(R.string.str_start); 
+            } 
+            catch (IllegalStateException e) 
+            { 
+              // TODO Auto-generated catch block 
+              mTextView1.setText(e.toString()); 
+              e.printStackTrace(); 
+            } 
+            catch (IOException e) 
+            { 
+              // TODO Auto-generated catch block 
+              mTextView1.setText(e.toString()); 
+              e.printStackTrace(); 
+            } 
+          }      
+        });
+        
+        /*©π§W§@≠∫∫q´ˆ∂s */
+        mBefore.setOnClickListener(new ImageButton.OnClickListener() 
+        {
+
+          @Override
+          public void onClick(View arg0)
+          {
+            // TODO Auto-generated method stub
+            mStart.setImageResource(R.drawable.stars);
+            mImageView1.setImageResource(R.drawable.dance);
+            
+            try 
+            { 
+              if(myPlayer1.isPlaying()==true) 
+              { 
+                /*±N MediaPlayer≠´≥]*/ 
+                myPlayer1.reset();            
+              }
+              /*≥]©w MediaPlayer≈™®˙SDcard™∫¿…Æ◊*/
+              myPlayer1.setDataSource( "/sdcard/nana.wav" );
+              myPlayer1.prepare();
+              /*ß‚ MediaPlayer±“∞ */
+              myPlayer1.start(); 
+              mTextView1.setText(R.string.str_start); 
+            } 
+            catch (IllegalStateException e) 
+            { 
+              // TODO Auto-generated catch block 
+              mTextView1.setText(e.toString()); 
+              e.printStackTrace(); 
+            } 
+            catch (IOException e) 
+            { 
+              // TODO Auto-generated catch block 
+              mTextView1.setText(e.toString()); 
+              e.printStackTrace(); 
+            } 
+          }      
+        });
+        
+        /*∞±§Ó´ˆ∂s */
+        mStop.setOnClickListener(new ImageButton.OnClickListener() 
+        { 
+          @Override 
+          public void onClick(View v) 
+          { 
+            // TODO Auto-generated method stub 
+            
+            if(myPlayer1.isPlaying()==true) 
+            { 
+              /*±N MediaPlayer≠´≥]*/
+              myPlayer1.reset(); 
+              mTextView1.setText(R.string.str_stopped);
+              mStart.setImageResource(R.drawable.star);
+              mPause.setImageResource(R.drawable.pause);
+              mImageView1.setImageResource(R.drawable.black);
+            } 
+          } 
+        }); 
+     
+//        data = new byte[2048];
+//        
+//        wavInfo = new WavInfo();
+////        InputStream wavStream = getResources().openRawResource(R.raw.test);
+//        InputStream wavStream;
+//		try {
+//			File f = new File(Environment.getExternalStorageDirectory()+"/nana.wav");
+//			wavStream = new FileInputStream(f);
+//			BufferedInputStream bufferedInputStream = new BufferedInputStream(wavStream); 
+//			try {
+//				readHeader(wavStream);
+////				data = readWavPcm(wavInfo,wavStream);
+//				
+//				while(bufferedInputStream.read(data) != -1) { 
+//					double[] doubleData = changeDataToDouble(data);
+//					rmZero(doubleData);
+//					// need downsampling to 22050
+//					
+//					double[] mfcc = extractMfcc(doubleData);
+//
+//	            }
+//				
+//				
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+//			
+//		} catch (FileNotFoundException e1) {
+//			// TODO Auto-generated catch block
+//			e1.printStackTrace();
+//		}
         
     }
     
