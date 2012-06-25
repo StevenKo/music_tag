@@ -1,22 +1,11 @@
 package sinica.music.tag.project;
 
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,20 +16,16 @@ import sinica.music.tag.project.WavInfo;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
-import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
 public class Music_tagActivity extends Activity {
@@ -70,44 +55,31 @@ public class Music_tagActivity extends Activity {
 		 
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
 			try 
-            { 
-            
-              
+            {   
               if(myPlayer1.isPlaying()==true) 
               {
-                /*ß‚ MediaPlayer≠´≥]*/
                 myPlayer1.reset();
                 myPlayer1.prepare();
               }
-              /*≥]©w MediaPlayer≈™®˙SDcard™∫¿…Æ◊*/
-//              myPlayer1.setDataSource( "/sdcard/nana.wav" );
-//              
-//              mSeeker.setMax(myPlayer1.getDuration());
               
               
-              /*ß‚ MediaPlayer∂}©lºΩ©Ò*/
               myPlayer1.start(); 
               mTextView1.setText(R.string.str_start); 
             } 
             catch (IllegalStateException e) 
             { 
-              // TODO Auto-generated catch block 
               mTextView1.setText(e.toString()); 
               e.printStackTrace(); 
             } 
             catch (IOException e) 
             { 
-              // TODO Auto-generated catch block 
               mTextView1.setText(e.toString()); 
               e.printStackTrace(); 
             } 
              
-            /* ∑Ì≠µº÷ºΩßπ∑|∞ı¶Ê™∫Listener */  
             myPlayer1.setOnCompletionListener(new OnCompletionListener() 
             { 
-              // @Override 
               public void onCompletion(MediaPlayer arg0) 
               {  
                 mTextView1.setText(R.string.str_finished);
@@ -116,7 +88,6 @@ public class Music_tagActivity extends Activity {
             });
 			handler.post(updatesb);
 			handler.postDelayed(updateTag, 500);
-			//用一个handler更新SeekBar
 		}
  
     };
@@ -135,7 +106,6 @@ public class Music_tagActivity extends Activity {
 					valDoubleArray[i] = Double.parseDouble(valArray[i+1]);
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 			mTag1.setTextSize((float) ((float) Math.exp(valDoubleArray[0])* 15.0));
@@ -148,7 +118,6 @@ public class Music_tagActivity extends Activity {
     	 
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
 			mSeeker.setProgress(myPlayer1.getCurrentPosition());
 			handler.postDelayed(updatesb, 1000);
 			//每秒钟更新一次
@@ -231,59 +200,13 @@ public class Music_tagActivity extends Activity {
           @Override 
           public void onClick(View v) 
           { 
-        	  
-  		    
-        	  
-//              PackageManager pm = getPackageManager();
-//              Intent intent = pm.getLaunchIntentForPackage("com.nexes.manager");
-////              intent.setAction(Intent.ACTION_GET_CONTENT);
-//              startActivityForResult(intent, 1200);
               
         	  handler.post(start);
-//            // TODO Auto-generated method stub 
-//        	  mStart.setImageResource(R.drawable.stars);
-//              mImageView1.setImageResource(R.drawable.dance);
-//              mPause.setImageResource(R.drawable.pause);
-//              
-//              try 
-//              { 
-//                if(myPlayer1.isPlaying()==true) 
-//                {
-//                  myPlayer1.reset();            
-//                }
-//                
-//                myPlayer1.prepare();
-//                myPlayer1.start(); 
-//                mTextView1.setText(R.string.str_start); 
-//              } 
-//              catch (IllegalStateException e) 
-//              { 
-//                // TODO Auto-generated catch block 
-//                mTextView1.setText(e.toString()); 
-//                e.printStackTrace(); 
-//              } 
-//              catch (IOException e) 
-//              { 
-//                // TODO Auto-generated catch block 
-//                mTextView1.setText(e.toString()); 
-//                e.printStackTrace(); 
-//              } 
-//               
-//              myPlayer1.setOnCompletionListener(new OnCompletionListener() 
-//              { 
-//                // @Override 
-//                public void onCompletion(MediaPlayer arg0) 
-//                {  
-//                  mTextView1.setText(R.string.str_finished);
-//                  mStart.setImageResource(R.drawable.star);
-//                } 
-//              });
             
             
           } 
         });     
          
-        /*º»∞±´ˆ∂s */ 
         mPause.setOnClickListener(new ImageButton.OnClickListener() 
         { 
           public void onClick(View view) 
@@ -318,7 +241,6 @@ public class Music_tagActivity extends Activity {
           @Override 
           public void onClick(View v) 
           { 
-            // TODO Auto-generated method stub 
             
             if(myPlayer1.isPlaying()==true) 
             { 
@@ -343,7 +265,6 @@ public class Music_tagActivity extends Activity {
 		valArray = getLine.split(" ");
 		
     	} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	
