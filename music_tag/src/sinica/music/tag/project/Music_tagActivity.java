@@ -6,12 +6,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 //import sinica.music.tag.mfcc.MFCC;
-import sinica.music.tag.mfcc.MFCC;
-import sinica.music.tag.project.WavInfo;
+//import sinica.music.tag.project.WavInfo;
 
 import android.app.Activity;
 import android.content.ComponentName;
@@ -19,19 +19,20 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.SeekBar;
+import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class Music_tagActivity extends Activity {
-    /** Called when the activity is first created. */
-	
-	private static WavInfo wavInfo;
+    
 	byte[] data;
 	
 	//music player
@@ -46,10 +47,13 @@ public class Music_tagActivity extends Activity {
     Handler handler = new Handler();
     private String[] valArray;
     private double[] valDoubleArray;
+    double[][] val;
     private BufferedReader in;
 	private TextView mTag1;
+	Spinner spinner;
     
     double[] mfcc;
+    ArrayList<TextView> tags = new ArrayList<TextView>();;
 	
 	Runnable start=new Runnable(){
 		 
@@ -62,8 +66,6 @@ public class Music_tagActivity extends Activity {
                 myPlayer1.reset();
                 myPlayer1.prepare();
               }
-              
-              
               myPlayer1.start(); 
               mTextView1.setText(R.string.str_start); 
             } 
@@ -97,19 +99,34 @@ public class Music_tagActivity extends Activity {
 		@Override
 		public void run() {
 			handler.postDelayed(updateTag, 100);
-			String getLine;
-			try {
-				getLine = in.readLine();
-				valArray = getLine.split("\\s+");
-				valDoubleArray = new double[valArray.length-1];
-				for(int i=0; i<valDoubleArray.length;i++){
-					valDoubleArray[i] = Double.parseDouble(valArray[i+1]);
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
+			int currentTime = myPlayer1.getCurrentPosition();
+			for( int tag_i = 0; tag_i < 1 ; tag_i++)
+			{
+			  setTagValue(currentTime, tag_i);
 			}
-			mTag1.setTextSize((float) ((float) Math.exp(valDoubleArray[0])* 15.0));
-			Double.parseDouble(valArray[1]);
+//			String getLine;
+//			try {
+//				getLine = in.readLine();
+//				valArray = getLine.split("\\s+");
+//				valDoubleArray = new double[valArray.length-1];
+//				for(int i=0; i<valDoubleArray.length;i++){
+//					valDoubleArray[i] = Double.parseDouble(valArray[i+1]);
+//				}
+//			} catch (IOException e) {
+//				e.printStackTrace();
+//			}
+//			mTag1.setTextSize((float) ((float) Math.exp(valDoubleArray[0])* 15.0));
+//			Double.parseDouble(valArray[1]);
+		}
+
+		private void setTagValue(int currentTime, int tag_i) {
+			int x = currentTime/25;
+            double sum = val[x][tag_i];
+			for(int i=0; i < 4; i++){
+				sum += val[x+i][tag_i];
+				sum += val[x-i][tag_i];
+            }
+			tags.get(tag_i).setTextSize((float) ((float) Math.exp(sum/9)* 15.0));
 		}
     	
     };
@@ -164,110 +181,94 @@ public class Music_tagActivity extends Activity {
         mSeeker = (SeekBar) findViewById(R.id.seek);
         mTag1 = (TextView) findViewById(R.id.tag1);
         mFile = (Button) findViewById(R.id.fileBtn);
+        spinner = (Spinner) findViewById(R.id.spinnner);
+        setSpinner();
+        setClickListener();
         
+        tags.add(mTag1);
         
-        try {
-//			File f = new File(Environment.getExternalStorageDirectory()+"/test.wav");
-            setPlayer("/sdcard/test.wav");
-		} catch (IllegalArgumentException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		} catch (IllegalStateException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		} catch (IOException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		}
-        
-        setFile(Environment.getExternalStorageDirectory()+"/test.txt"); 
-        
-        
-        mFile.setOnClickListener(new ImageButton.OnClickListener(){
-
-			@Override
-			public void onClick(View v) {
-				Intent intent = new Intent(Intent.ACTION_GET_CONTENT, null);
-		  		intent.setComponent(new ComponentName("com.nexes.manager", "com.nexes.manager.Main"));
-		  		startActivityForResult(intent,11);
-				
-			}
-        	
-        });
-     
-        mStart.setOnClickListener(new ImageButton.OnClickListener() 
-        { 
-          @Override 
-          public void onClick(View v) 
-          { 
-              
-        	  handler.post(start);
-            
-            
-          } 
-        });     
-         
-        mPause.setOnClickListener(new ImageButton.OnClickListener() 
-        { 
-          public void onClick(View view) 
-          { 
-            if (myPlayer1 != null) 
-            { 
-              if(bIsReleased == false) 
-              { 
-                if(bIsPaused==false) 
-                { 
-                  myPlayer1.pause(); 
-                  bIsPaused = true; 
-                  mTextView1.setText(R.string.str_pause); 
-                  mStart.setImageResource(R.drawable.star);
-                  mPause.setImageResource(R.drawable.pause_2);
-                } 
-                else if(bIsPaused==true) 
-                { 
-                  myPlayer1.start(); 
-                  bIsPaused = false; 
-                  mTextView1.setText(R.string.str_start);
-                  mStart.setImageResource(R.drawable.stars);
-                  mPause.setImageResource(R.drawable.pause);
-                } 
-              } 
-            } 
-          } 
-        }); 
-        
-        mStop.setOnClickListener(new ImageButton.OnClickListener() 
-        { 
-          @Override 
-          public void onClick(View v) 
-          { 
-            
-            if(myPlayer1.isPlaying()==true) 
-            { 
-              myPlayer1.reset(); 
-              mTextView1.setText(R.string.str_stopped);
-              mStart.setImageResource(R.drawable.star);
-              mPause.setImageResource(R.drawable.pause);
-              mImageView1.setImageResource(R.drawable.black);
-            } 
-          } 
-        }); 
     }
     
-    private void setFile(String string) {
-    	try { 	
-    	
-    	File f = new File(string);
-		FileInputStream txtStream = new FileInputStream(f);
-		in = new BufferedReader(new InputStreamReader(txtStream));
-		String getLine;
-		getLine = in.readLine();
-		valArray = getLine.split(" ");
-		
-    	} catch (IOException e) {
-			e.printStackTrace();
-		}
+    private void setSpinner() {
+    	ArrayAdapter<Double> adapter = new ArrayAdapter<Double>(this,android.R.layout.simple_spinner_item,new Double[]{ 0.125,0.25});
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
 	
+   }
+
+	private void setClickListener() {
+    	 mFile.setOnClickListener(new ImageButton.OnClickListener(){
+ 			@Override
+ 			public void onClick(View v) {
+ 				Intent intent = new Intent(Intent.ACTION_GET_CONTENT, null);
+ 		  		intent.setComponent(new ComponentName("com.nexes.manager", "com.nexes.manager.Main"));
+ 		  		startActivityForResult(intent,11);
+ 			}
+         });
+      
+         mStart.setOnClickListener(new ImageButton.OnClickListener() 
+         { 
+           @Override 
+           public void onClick(View v) 
+           { 
+         	  handler.post(start);
+           } 
+         });     
+          
+         mPause.setOnClickListener(new ImageButton.OnClickListener() 
+         { 
+           public void onClick(View view) 
+           { 
+             if (myPlayer1 != null) 
+             { 
+               if(bIsReleased == false) 
+               { 
+                 if(bIsPaused==false) 
+                 { 
+                   myPlayer1.pause(); 
+                   bIsPaused = true; 
+                   mTextView1.setText(R.string.str_pause); 
+                   mStart.setImageResource(R.drawable.star);
+                   mPause.setImageResource(R.drawable.pause_2);
+                 } 
+                 else if(bIsPaused==true) 
+                 { 
+                   myPlayer1.start(); 
+                   bIsPaused = false; 
+                   mTextView1.setText(R.string.str_start);
+                   mStart.setImageResource(R.drawable.stars);
+                   mPause.setImageResource(R.drawable.pause);
+                 } 
+               } 
+             } 
+           } 
+         }); 
+         
+         mStop.setOnClickListener(new ImageButton.OnClickListener() 
+         { 
+           @Override 
+           public void onClick(View v) 
+           { 
+             
+             if(myPlayer1.isPlaying()==true) 
+             { 
+               myPlayer1.reset(); 
+               mTextView1.setText(R.string.str_stopped);
+               mStart.setImageResource(R.drawable.star);
+               mPause.setImageResource(R.drawable.pause);
+               mImageView1.setImageResource(R.drawable.black);
+             } 
+           } 
+         });
+         
+         spinner.setOnItemSelectedListener(new Spinner.OnItemSelectedListener(){
+             public void onItemSelected(AdapterView adapterView, View view, int position, long id){
+                 Toast.makeText(Music_tagActivity.this, "您選擇"+adapterView.getSelectedItem().toString(), Toast.LENGTH_LONG).show();
+             }
+             public void onNothingSelected(AdapterView arg0) {
+                 Toast.makeText(Music_tagActivity.this, "您沒有選擇任何項目", Toast.LENGTH_LONG).show();
+             }
+         });
 }
 
 	private void setPlayer(String string) throws IllegalArgumentException, IllegalStateException, IOException {
@@ -288,6 +289,7 @@ public class Music_tagActivity extends Activity {
 			matcher.find();
 			String dir = matcher.group();
 			setFile( dir +"/tagaff.txt"); 
+			readFile(dir);
 			try {
 				setPlayer(path);
 			} catch (IllegalArgumentException e) {
@@ -302,66 +304,56 @@ public class Music_tagActivity extends Activity {
 			}
 		}
 	}
-//        data = new byte[2048];
-//        
-//        wavInfo = new WavInfo();
-////        InputStream wavStream = getResources().openRawResource(R.raw.test);
-//        InputStream wavStream;
-//		try {
-//			
-//			//write file
-//			File root = new File(Environment.getExternalStorageDirectory(), "Notes");
-//	        if (!root.exists()) {
-//	            root.mkdirs();
-//	        }
-//	        File gpxfile = new File(root, "test.txt");
-//	        
-//			
-//			
-//			File f = new File(Environment.getExternalStorageDirectory()+"/test.wav");
-//			wavStream = new FileInputStream(f);
-//			BufferedInputStream bufferedInputStream = new BufferedInputStream(wavStream); 
-//			try {
-//				
-//				FileWriter writer = new FileWriter(gpxfile);
-//				
-//				readHeader(wavStream);
-////				data = readWavPcm(wavInfo,wavStream);
-//				Log.e("start time",System.currentTimeMillis()+"");
-//				writer.append("start time : " + System.currentTimeMillis()+"");
-//				writer.flush();
-//				while(bufferedInputStream.read(data) != -1) { 
-////					Log.e("start mfcc time",System.currentTimeMillis()+"");
-//					double[] doubleData = changeDataToDouble(data);
-//					rmZero(doubleData);
-//					// need downsampling to 22050
-//					
-//					 mfcc = extractMfcc(doubleData);
-////					 Log.e("end mfcc time",System.currentTimeMillis()+"");
-////					 mfcc.toString();
-////					 Arrays.toString(mfcc);
-//					 writer.append(Arrays.toString(mfcc));
-//					 writer.flush();
-//
-//	            }
-//				Log.e("end time",System.currentTimeMillis()+"");
-//				writer.append("end time : " + System.currentTimeMillis()+"");
-//				writer.flush();
-//				writer.close();
-//				
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//				Log.e("IO exception",System.currentTimeMillis()+"");
+
+	private void setFile(String string) {
+    	try { 	
+    	
+    	File f = new File(string);
+		FileInputStream txtStream = new FileInputStream(f);
+		in = new BufferedReader(new InputStreamReader(txtStream));
+		String getLine;
+		getLine = in.readLine();
+		ArrayList<double[]> data = new ArrayList<double[]>();
+		while((getLine = in.readLine()) != null){
+			String[] valPosArray = getLine.split("\\s+");
+			double[] valDoubleArray = new double[valPosArray.length-1];
+			for(int i=0; i<valDoubleArray.length;i++){
+				valDoubleArray[i] = Double.parseDouble(valPosArray[i+1]);
+			}
+			data.add(valDoubleArray);
+			
+		}
+		
+		val = new double[data.size()][45];
+		data.toArray(val);
+		
+    	} catch (IOException e) {
+			e.printStackTrace();
+		}
+	
+}
+	private void readFile(String dir) {
+//		try { 	
+//	    	File f = new File(dir + "posterior.txt");
+//			FileInputStream txtStream = new FileInputStream(f);
+//			BufferedReader inPosteriior = new BufferedReader(new InputStreamReader(txtStream));
+//			String getLine;
+//			ArrayList<double[]> data = new ArrayList<double[]>();
+//			while((getLine = inPosteriior.readLine()) != null){
+//				String[] valPosArray = getLine.split("\\s+");
+//				double[] valDoubleArray = new double[valPosArray.length-1];
+//				for(int i=0; i<valDoubleArray.length;i++){
+//					valDoubleArray[i] = Double.parseDouble(valPosArray[i+1]);
+//				}
+//				data.add(valDoubleArray);
 //			}
-//			
-//		} catch (FileNotFoundException e1) {
-//			// TODO Auto-generated catch block
-//			e1.printStackTrace();
-//			Log.e("File exception",System.currentTimeMillis()+"");
+//
+//			//getLine = "";
+//	    } catch (IOException e) {
+//				e.printStackTrace();
 //		}
-//		Log.e("end",System.currentTimeMillis()+"");
-//		
+		
+	}
     
     
     

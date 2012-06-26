@@ -35,6 +35,7 @@ public final class R {
         public static final int myTextView1=0x7f060002;
         public static final int pause=0x7f060004;
         public static final int seek=0x7f060006;
+        public static final int spinnner=0x7f060008;
         public static final int tag1=0x7f060007;
     }
     public static final class layout {
